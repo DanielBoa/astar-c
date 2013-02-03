@@ -1,0 +1,156 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+//function prototypes
+void deleteElement(int idx);
+void createMap();
+void printMap();
+void aStar();
+void findS();
+
+//struct used for cells
+struct cell{
+    int f, x, y, obst, a, b;
+};
+
+/*  List used for A* algorithm
+ *
+ *  Open list   - Holds all cells that are being considered
+ *  Closed list - Holds all cells that are part of the final path   */
+struct cell closedList[250];
+struct cell openList[250];
+
+//used to keep track of how many items are on both the openList and closedList
+int closedLength = 0;
+int openLength = 0;
+
+//the destination cell
+struct cell destination;
+
+//pointer to cell on open list with lowest F score
+struct cell *s;
+
+//height of file being read
+int mapHeight = 20;
+int mapWidth = 20;
+
+char mapLayout[20][20];
+
+int main()
+{
+    //used so that the A will qualify as the first best choice
+    struct cell throwAwayCell;
+    throwAwayCell.f = 1000;
+    s = &throwAwayCell;
+
+    createMap();
+    printMap();
+    aStar();
+
+    return 0;
+}
+
+
+
+/*  Used to remove a cell from openList
+ *  adapted from: http://www.programmingsimplified.com/c/source-code/c-program-delete-element-from-array
+ */
+void deleteElement(int idx){
+    int c;
+    if ( idx >= openLength+1 )
+        printf("Failed to remove cell from openList because the index provided is greater than the number of items.\n");
+    else{
+        for ( c = idx - 1 ; c < openLength - 1 ; c++ )
+        openList[c] = openList[c+1];
+    }
+    openLength--;
+
+    return;
+}
+
+
+
+//read in string from file and populate map with obstacle
+void createMap(){
+    FILE *file = fopen("map.txt", "r");
+    int x = 0;
+    int y = 0;
+    int c;
+
+    if (file == NULL)
+        return; //could not open file
+
+    while ((c = fgetc(file)) != EOF)
+    {
+        if(c == '\n'){
+            y++;
+            x = 0;
+        }else{
+            mapLayout[x][y] = c;
+
+            if(c == 'A'){
+                //add A to the closed list
+                openList[0].a = 1;
+                openList[0].b = 0;
+                openList[0].obst = 0;
+                openList[0].x = x;
+                openList[0].y = y;
+                openList[0].f = 0;
+                //increment how many items are on the closed list
+                openLength++;
+            }else if(c == 'B'){
+                //fill in information about the destination  cell
+                destination.a = 0;
+                destination.b = 1;
+                destination.obst = 0;
+                destination.x = x;
+                destination.y = y;
+            }
+
+            x++;
+        }
+    }
+    fclose(file);
+    //print out location of A and B
+    printf("A - x:%d, y:%d\nB - x:%d, y:%d\n", openList[0].x, openList[0].y, destination.x, destination.y);
+    return;
+}
+
+//print out map
+void printMap(){
+    int x=0,y=0;
+
+    for(y=0;y<mapHeight;y++){
+        for(x=0;x<mapWidth;x++){
+            printf("%c", mapLayout[x][y]);
+        }
+        printf("\n");
+    }
+    printf("\n\n");
+}
+
+//performs a* algorithm to find the shortest path between point A and B on the map
+void aStar(){
+    //loop until path has been found
+    while(1){
+        findS();
+    }
+}
+
+//searches through the all cells in openList and points s to the one with the best F
+void findS(){
+    int i;
+    int indexOfS;
+
+    //loop through open list and find the cell with the lowest F value
+    for(i=0;i<openLength;i++){
+        if(openList[i].f < s->f){
+            indexOfS = i;
+        }
+    }
+
+    //remove S from openList into closedList and then remove it from openList.
+    closedList[closedLength] = openList[indexOfS];
+    closedLength++;
+    deleteElement(indexOfS);
+}
